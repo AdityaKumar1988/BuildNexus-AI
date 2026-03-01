@@ -8,9 +8,9 @@
    CONSTANTS
    ============================================================ */
 const SB = {
-  API_BASE:    'http://localhost:3000',
+  API_BASE:    window.location.origin,  // Auto-detects: localhost:3000 OR https://smartbuild-1-2fm7.onrender.com
   ML_BASE:     'http://localhost:5000',
-  WS_URL:      'http://localhost:3000',
+  WS_URL:      window.location.origin,  // Auto-detects production WebSocket URL
   VERSION:     '1.0.0',
   PROJECT_KEY: 'sb_active_project',
   TOKEN_KEY:   'sb_token',
