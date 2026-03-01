@@ -11,8 +11,8 @@
 const _isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
 const API = {
-  BASE_URL: _isLocal ? 'http://localhost:3000' : 'https://smartbuild-backend.onrender.com',
-  ML_URL:   _isLocal ? 'http://localhost:5000'  : 'https://smartbuild-ml.onrender.com',
+  BASE_URL: _isLocal ? 'http://localhost:3000' : 'https://smartbuild-1-2fm7.onrender.com',
+  ML_URL:   _isLocal ? 'http://localhost:5000'  : 'https://smartbuild-emuq.onrender.com',
   socket: null,
   projectId: null,
 };
@@ -400,5 +400,6 @@ window.OptimizeAPI = OptimizeAPI;
 window.DashboardAPI = DashboardAPI;
 window.apiFetch    = apiFetch;
 window.subscribeToProject = subscribeToProject;
+
 
 console.info('[SmartBuild] api.js loaded — ENV:', _isLocal ? 'LOCAL' : 'PRODUCTION');
