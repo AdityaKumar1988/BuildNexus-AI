@@ -11,8 +11,8 @@
 const _isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
 const API = {
-  BASE_URL: _isLocal ? 'http://localhost:3000' : 'https://smartbuild-1-2fm7.onrender.com',
-  ML_URL:   _isLocal ? 'http://localhost:5000'  : 'https://smartbuild-emuq.onrender.com',
+  BASE_URL: _isLocal ? 'http://localhost:8000' : 'https://buildnexus-ai-aditya.onrender.com',
+  ML_URL:   _isLocal ? 'http://localhost:8000' : 'https://buildnexus-ai-aditya.onrender.com',
   socket: null,
   projectId: null,
 };
@@ -125,7 +125,7 @@ const DesignAPI = {
       qualityGrade: parseInt(params.qualityGrade || 2),
       siteAccess: parseInt(params.siteAccess || 2),
     };
-    return apiFetch(`${API.BASE_URL}/api/design/generate`, {
+    return apiFetch(`${API.BASE_URL}/generate-design`, {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -170,7 +170,7 @@ const PredictionAPI = {
       project_complexity:    parseInt(params.project_complexity    ?? params.complexity        ?? 2),
       site_accessibility:    parseInt(params.site_accessibility    ?? params.siteAccess        ?? 2),
     };
-    return apiFetch(`${API.BASE_URL}/api/predict/risk`, {
+    return apiFetch(`${API.BASE_URL}/predict-risk`, {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -184,7 +184,7 @@ const PredictionAPI = {
       timeline_months:  parseInt(params.timeline || 12),
       quality_grade:    parseInt(params.qualityGrade || 2),
     };
-    return apiFetch(`${API.BASE_URL}/api/predict/cost`, {
+    return apiFetch(`${API.BASE_URL}/estimate-cost`, {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -360,7 +360,7 @@ const DashboardAPI = {
   },
 
   async getHealthMetrics(projectId) {
-    return apiFetch(`${API.BASE_URL}/api/dashboard/health?projectId=${projectId || 'demo'}`);
+  return apiFetch(`${API.BASE_URL}/health`);
   },
 
   async getProductivity(projectId) {
