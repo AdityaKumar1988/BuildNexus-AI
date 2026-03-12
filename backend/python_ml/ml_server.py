@@ -165,6 +165,18 @@ def estimate_cost():
         'confidence': 0.82
     })
 
+@app.route('/', methods=['GET'])
+def home():
+    return jsonify({
+        "message": "ML Construction Optimization API Running",
+        "endpoints": [
+            "/generate-design",
+            "/predict-risk",
+            "/estimate-cost",
+            "/health"
+        ]
+    })
+    
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({
