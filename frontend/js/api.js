@@ -382,7 +382,7 @@ const DashboardAPI = {
    INITIALIZATION
    ════════════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
-  initWebSocket();
+  //initWebSocket();
 });
 
 window.addEventListener('beforeunload', () => {
