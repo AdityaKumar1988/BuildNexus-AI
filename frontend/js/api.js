@@ -253,8 +253,18 @@ const PredictionAPI = {
    MONITOR API — used by Feature6, Feature7
    ════════════════════════════════════════════════════════════════════ */
 const MonitorAPI = {
-  async getSensors(projectId) {
-    return apiFetch(`${API.BASE_URL}/api/monitor/sensors?projectId=${projectId || 'demo'}`);
+  async getSensors() {
+    const res = await fetch(`${API.BASE_URL}/site-monitor`);
+    const data = await res.json();
+
+    return {
+      sensors: [
+        { sensorId: "S1", value: data.temperature },
+        { sensorId: "S2", value: data.humidity },
+        { sensorId: "S3", value: data.vibration },
+        { sensorId: "S4", value: data.dust }
+      ]
+    };
   },
 
   async getSensor(sensorId) {

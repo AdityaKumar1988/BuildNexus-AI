@@ -187,6 +187,18 @@ def health():
         }
     })
 
+@app.route('/site-monitor', methods=['GET'])
+def site_monitor():
+    import random
+
+    data = {
+        "temperature": round(random.uniform(25, 40), 1),
+        "humidity": round(random.uniform(40, 80), 1),
+        "vibration": round(random.uniform(0.1, 3.0), 2),
+        "dust": round(random.uniform(50, 200), 1)
+    }
+
+    return jsonify(data)
 # ─── START ───────────────────────────────────────────────────────────
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))
