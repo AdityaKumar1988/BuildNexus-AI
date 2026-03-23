@@ -19,7 +19,7 @@ An intelligent platform that leverages <b>Machine Learning, Genetic Algorithms, 
 
 <p>
 🌐 <b>Application:</b> <br>
-<a href="https://buildnexus-ai-aditya.onrender.com">
+<a href="https://buildnexus-ai-adi.onrender.com">
 https://buildnexus-ai-aditya.onrender.com
 </a>
 </p>
