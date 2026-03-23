@@ -324,7 +324,7 @@ project-root
 <h2>📸 Screenshots</h2>
 
 <p align="center">
-<img src=Screenshots/input.png" width="800">
+<img src="Screenshots/input.png" width="800">
 <img src="Screenshots/designs.png" width="800">
 <img src="Screenshots/dashboard.png" width="800">
 </p>
