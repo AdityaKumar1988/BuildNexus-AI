@@ -1,16 +1,17 @@
 import random
 import numpy as np
 from deap import base, creator, tools, algorithms
+import joblib
+import os 
 
-# ─── GENETIC ALGORITHM ──────────────────────────────────────────────
-# Chromosome: [floors, area_per_floor, material_grade, structural_type, facade_type]
-# material_grade: 1=standard, 2=premium, 3=luxury
-# structural_type: 1=RCC, 2=steel, 3=composite
-# facade_type: 1=brick, 2=glass, 3=cladding
+MODEL_DIR = os.path.join(os.path.dirname(__file__), "ml_models")
+
+cost_model = joblib.load(os.path.join(MODEL_DIR, "cost_estimator.pkl"))
+delay_model = joblib.load(os.path.join(MODEL_DIR, "delay_predictor.pkl"))
 
 BOUNDS = {
     'floors':         (1, 30),
-    'area_per_floor': (500, 5000),
+    'area_per_floor': (500, 2000),
     'material_grade': (1, 3),
     'structural_type':(1, 3),
     'facade_type':    (1, 3)
@@ -27,18 +28,64 @@ def decode(ind):
 
 def fitness(individual, constraints):
     p = decode(individual)
+    floor_bonus = p['floors'] * 5000
+    
     total_area = p['floors'] * p['area_per_floor']
 
-    cost_per_sqft = 2000 + p['material_grade'] * 500 + p['structural_type'] * 300
-    total_cost = total_area * cost_per_sqft
-    timeline = 6 + p['floors'] * 1.5 + p['material_grade'] * 2
+    diversity_penalty = 0
+    if p['floors'] < 3:
+        diversity_penalty += 50000
+    if p['area_per_floor'] > 2000:
+        diversity_penalty += 30000
+        
+    min_area = constraints.get('min_area', 1000)
+
+    area_penalty = 0
+    if total_area < min_area:
+        area_penalty = (min_area - total_area) * 1000
+        
+    # ─── COST PREDICTION USING ML MODEL ───
+    cost_features = [[
+        total_area,                 # area
+        p['material_grade'],        # building_type
+        1.0,                        # location_factor 
+        12,                         # timeline guess
+        p['material_grade']         # quality_grade
+    ]]
+
+    total_cost = cost_model.predict(cost_features)[0]
+
+    # ─── DELAY PREDICTION USING ML MODEL ───
+    delay_features = [[
+        1,   # weather_condition
+        80,  # material_availability
+        50,  # labor_count
+        1,   # equipment_status
+        2,   # project_complexity
+        2    # site_accessibility
+    ]]
+
+    delay_pred = delay_model.predict(delay_features)[0]
+
+    # timeline adjustment if delay predicted
+    timeline = 12 * (1.3 if delay_pred == 1 else 1)
+
     safety_score = 60 + p['structural_type'] * 12 + p['material_grade'] * 5
     carbon = total_area * (0.8 - p['material_grade'] * 0.1 + p['structural_type'] * 0.15)
 
     budget = constraints.get('budget', float('inf'))
-    cost_penalty = max(0, total_cost - budget) / budget if budget and budget < float('inf') else 0
+    cost_penalty = 0
+    if budget and budget < float('inf'):
+        cost_penalty = max(0, total_cost - budget) / budget
 
-    score = -(total_cost * 0.4 + timeline * 0.3 + carbon * 0.2 - safety_score * 0.1 + cost_penalty * 100000)
+    score = -(total_cost * 0.4 +
+          timeline * 0.3 +
+          carbon * 0.2 -
+          safety_score * 0.1 +
+          cost_penalty * 100000 +
+          area_penalty +
+          diversity_penalty) +floor_bonus
+
     return (score,)
 
 def run_genetic_algorithm(data):
@@ -60,26 +107,41 @@ def run_genetic_algorithm(data):
     toolbox.register('population', tools.initRepeat, list, toolbox.individual)
     toolbox.register('evaluate', lambda ind: fitness(ind, constraints))
     toolbox.register('mate', tools.cxBlend, alpha=0.3)
-    toolbox.register('mutate', tools.mutGaussian, mu=0, sigma=1, indpb=0.2)
+    toolbox.register('mutate', tools.mutGaussian, mu=0, sigma=2, indpb=0.3)
     toolbox.register('select', tools.selTournament, tournsize=3)
 
-    pop = toolbox.population(n=100)
-    algorithms.eaSimple(pop, toolbox, cxpb=0.7, mutpb=0.1, ngen=50, verbose=False)
+    pop = toolbox.population(n=40)
+    algorithms.eaSimple(pop, toolbox, cxpb=0.7, mutpb=0.1, ngen=25, verbose=False)
 
-    top3 = tools.selBest(pop, k=3)
+    top3 = tools.selRandom(pop, k=3)
     designs = []
     labels = ['Design A', 'Design B', 'Design C']
-
+    strategies = [
+    {"cost_bias": -0.1, "time_bias": 0.1, "safety_bias": -0.05},
+    {"cost_bias": 0.0,  "time_bias": 0.0, "safety_bias": 0.0},
+    {"cost_bias": 0.1,  "time_bias": -0.1,"safety_bias": 0.1}
+    ]
+    
     for i, ind in enumerate(top3):
         p = decode(ind)
+        strategy = strategies[i]
         total_area  = p['floors'] * p['area_per_floor']
-        cost        = total_area * (2000 + p['material_grade'] * 500 + p['structural_type'] * 300)
-        timeline_mo = round(6 + p['floors'] * 1.5 + p['material_grade'] * 2, 1)
-        safety_raw  = round(60 + p['structural_type'] * 12 + p['material_grade'] * 5, 1)   # 60–111
+        variation = 1 + random.uniform(-0.15, 0.15)+(i * 0.05)
+        cost_features = [[
+            total_area,                # area
+            p['material_grade'],       # building_type
+            1.0,                       # location_factor (default)
+            12,                        # timeline guess
+            p['material_grade']        # quality_grade
+        ]]
+        base_cost = cost_model.predict(cost_features)[0]
+        cost = base_cost * (1 + strategy["cost_bias"]) * variation
+        timeline_base = (6 + p['floors'] * 1.5 + p['material_grade'] * 2)
+        timeline_mo = round(timeline_base * (1 + strategy["time_bias"]) * variation, 1)     
+        safety_base = (60 + p['structural_type'] * 12 + p['material_grade'] * 5)
+        safety_raw = round(safety_base * (1 + strategy["safety_bias"]) * variation, 1)   # 60–111
         carbon_raw  = round(total_area * (0.8 - p['material_grade'] * 0.1), 2)
 
-        # ── Normalised scores (0.0 – 1.0) for radar chart ──
-        # cost_efficiency: how far under budget (or 0 if no budget)
         if budget and budget < float('inf'):
             cost_eff = max(0.0, round(1.0 - min(cost / budget, 1.5), 3))
         else:
